@@ -1,5 +1,5 @@
-## The SRE Way
+# The SRE Way
 
-# Proposal
+## Proposal
 
 Build a highly scalable infrastructure using the principles of distributed system design.
