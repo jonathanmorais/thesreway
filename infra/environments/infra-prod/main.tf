@@ -1,3 +1,18 @@
+provider "aws" {
+  region   = "us-east-1"
+  profile  = "personal"
+  shared_credentials_file = "~/.aws/credentials"
+
+}
+
+terraform {
+  backend "s3" {
+    bucket         = "infra-states-terraform"
+    key            = "states"
+    region         = "us-east-1"
+  }
+}
+
 module "ecs_cluster" {
     source = "../../modules/ecs-cluster"
     team   = "foo"
@@ -140,33 +155,33 @@ module "ecs_service" {
   }
 }
 
-module "cluster_redis" {
-    source              = "../../modules/redis-cluster"
-    name                = "foo"
-    node_type           = "cache.t3.micro"
-    num_cache_nodes     = 1
-    port                = 6379
-    availability_zone   = ""
-    vpc_id              = "vpc-xxx"
-    security_groups     = ["sg-xxx"]
-    private_subnet_ids  = ["subnet-xxx"]    
-}
+module "redis_replication_group" {
+    source                        = "../../modules/redis-cluster"
+    availability_zones            = ["us-east-1a"]
+    name                          = "redis_replication_group"
+    number_cache_clusters         = 1
+    replication_group_id          = "rd-rep-group-1"
+    instance_type                 = "cache.t3.micro"
+    subnet_group_name             = "sub-group-redis"
+    parame_group_name             = "redis-pg"
+    family                        = "redis4.0"
+    replication_group_description = "replication group for redis"
+    cluster_size                  = var.cluster_size
+    apply_immediately             = true
+    automatic_failover_enabled    = false
 
-module "rds_cluster_aurora_postgres" {
-  source          = "git::https://github.com/cloudposse/terraform-aws-rds-cluster.git?ref=master"
-  name            = "postgres"
-  engine          = "aurora-postgresql"
-  cluster_family  = "aurora-postgresql9.6"
-  cluster_size    = "2"
-  namespace       = "eg"
-  stage           = "dev"
-  admin_user      = "admin"
-  admin_password  = "Testxxxx"
-  db_name         = "dbname"
-  db_port         = "5432"
-  instance_type   = "db.t3.micro"
-  vpc_id          = "vpc-xxxxxxxx"
-  security_groups = ["sg-xxxxxxxx"]
-  subnets         = ["subnet-xxxxxxxx", "subnet-xxxxxxxx"]
-  zone_id         = "Zxxxxxxxx"
+    parameter = [
+      {
+        name  = "notify-keyspace-events"
+        value = "lK"
+      }
+    ]
+
+    tags = {
+        team        = "squad-foo"
+        Billing     = "squad-foo"
+        Project     = "foo-project"
+        Application = "infra"
+        Environment = "prod"
+    }
 }
